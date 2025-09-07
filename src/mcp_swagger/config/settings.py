@@ -14,6 +14,7 @@ class Settings:
     base_url: str
     api_token: str | None
     server_name: str
+    instructions: str | None
 
     # Filtering options
     methods: list[str] | None
@@ -41,6 +42,7 @@ class Settings:
             base_url=_determine_base_url(args, swagger_spec),
             api_token=_get_api_token(args),
             server_name=args.server_name,
+            instructions=args.instructions,
             methods=args.methods,
             paths=args.paths,
             exclude_paths=args.exclude_paths,

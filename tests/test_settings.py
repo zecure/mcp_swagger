@@ -51,6 +51,7 @@ class TestSettings:
             base_url=None,
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["get", "post"],
             paths=["/api/*"],
             exclude_paths=["/internal/*"],
@@ -108,6 +109,7 @@ class TestSettings:
             base_url=None,
             api_token=None,
             server_name="server",
+            instructions=None,
             methods=None,
             paths=None,
             exclude_paths=None,
@@ -312,6 +314,7 @@ class TestSettings:
             base_url="https://api.test.com",
             api_token="token123",
             server_name="test",
+            instructions=None,
             methods=["get"],
             paths=["/api/*"],
             exclude_paths=["/admin/*"],
@@ -353,6 +356,7 @@ class TestSettings:
             base_url="https://api.com",
             api_token=None,
             server_name="server",
+            instructions=None,
             methods=["get", "post", "put"],
             paths=["/users/*", "/posts/*"],
             exclude_paths=["/admin/*", "/internal/*"],
@@ -380,6 +384,18 @@ class TestSettings:
         assert settings.tags == ["public", "v1", "stable"]
         expected_tag_count = 3
         assert len(settings.tags) == expected_tag_count
+
+    def test_from_args_with_instructions(self) -> None:
+        """Test Settings creation with instructions argument."""
+        # Arrange
+        self.sample_args.instructions = "You are a helpful API assistant"
+
+        # Act
+        settings = Settings.from_args(self.sample_args, self.sample_spec)
+
+        # Assert
+        assert settings.instructions == "You are a helpful API assistant"
+        assert settings.server_name == "test-server"
 
 
 if __name__ == "__main__":

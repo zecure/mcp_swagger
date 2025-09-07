@@ -49,6 +49,11 @@ def _add_optional_arguments(parser: argparse.ArgumentParser) -> None:
         default="swagger_mcp",
         help="Name for the MCP server (default: swagger_mcp)",
     )
+    parser.add_argument(
+        "--instructions",
+        default=None,
+        help="Description of how to interact with this server",
+    )
 
 
 def _add_filtering_options(parser: argparse.ArgumentParser) -> None:
