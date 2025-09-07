@@ -117,6 +117,7 @@ mypy_path = "src"
 namespace_packages = true
 implicit_reexport = true
 follow_imports = "silent"
+exclude = ["build/", "dist/", ".eggs/"]
 
 # Type checking strictness
 disallow_untyped_defs = false
