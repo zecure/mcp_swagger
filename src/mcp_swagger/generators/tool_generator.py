@@ -196,10 +196,18 @@ class ToolGenerator:
             # Prepare headers
             headers = self._prepare_headers(tool_info.security_headers)
 
-            # Execute request
-            return await self.http_client.execute_request(
+            # Execute request and ensure response is awaited
+            result = await self.http_client.execute_request(
                 tool_info.method, url, query, json_body, headers
             )
+
+            # Ensure result is properly formatted for SSE transport
+            if result is None:
+                result = {"status": "success"}
+            elif not isinstance(result, dict):
+                result = {"data": result}
+
+            return result
 
         api_tool.__name__ = tool_info.name
         api_tool.__doc__ = tool_info.description
@@ -213,9 +221,18 @@ class ToolGenerator:
             url = self._get_full_url(tool_info.path)
             headers = self._prepare_headers(tool_info.security_headers)
 
-            return await self.http_client.execute_request(
+            # Execute request and ensure response is awaited
+            result = await self.http_client.execute_request(
                 tool_info.method, url, None, None, headers
             )
+
+            # Ensure result is properly formatted for SSE transport
+            if result is None:
+                result = {"status": "success"}
+            elif not isinstance(result, dict):
+                result = {"data": result}
+
+            return result
 
         api_tool.__name__ = tool_info.name
         api_tool.__doc__ = tool_info.description
