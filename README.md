@@ -1,269 +1,123 @@
 # MCP Swagger Server
 
-Dynamic MCP server generator that creates FastMCP servers from Swagger/OpenAPI specifications with flexible filtering options.
+Generate MCP (Model Context Protocol) servers from Swagger/OpenAPI specifications with flexible filtering.
 
 ## Features
 
-- **Dynamic Tool Generation**: Automatically generates MCP tools from Swagger/OpenAPI endpoints
-- **Flexible Filtering**: Control which endpoints to expose through various filter options
-- **Rich Metadata**: Preserves Swagger descriptions, parameters, and schemas in MCP tools
-- **Token Authentication**: Built-in support for Bearer token authentication
-- **Type Safety**: Automatic parameter validation and type conversion
-- **Comprehensive Documentation**: Tools include detailed descriptions and parameter documentation
-- **Modular Architecture**: Clean separation of concerns for easy maintenance and extension
+- **Dynamic Tool Generation**: Automatically creates MCP tools from OpenAPI endpoints
+- **Flexible Filtering**: Control exposed endpoints via HTTP methods, paths, tags, and operation IDs
+- **Authentication**: Built-in Bearer token support
+- **Type Safety**: Automatic parameter validation and conversion
+- **FastMCP Integration**: Built on the FastMCP framework for reliable MCP server implementation
 
 ## Installation
 
 ```bash
+# Install from source
+pip install -e .
+
+# Or install dependencies directly
 pip install -r requirements.txt
 ```
 
-## Usage
-
-### Basic Usage
-
-By default, only GET endpoints are exposed:
+## Quick Start
 
 ```bash
-python main.py path/to/swagger.json
-```
+# Basic usage (exposes GET endpoints by default)
+mcp-swagger path/to/swagger.json
 
-### With Authentication
+# With authentication
+mcp-swagger swagger.json --api-token "your-token"
 
-```bash
-# Via environment variable
-export API_TOKEN="your-api-token"
-python main.py swagger.json
-
-# Via command line
-python main.py swagger.json --api-token "your-api-token"
-```
-
-### Custom Base URL
-
-```bash
-python main.py swagger.json --base-url "https://api.example.com"
+# Custom base URL
+mcp-swagger swagger.json --base-url "https://api.example.com"
 ```
 
 ## Filtering Options
 
-### HTTP Methods
+Control which endpoints are exposed:
 
-Control which HTTP methods to expose:
+- **HTTP Methods**: `--methods get post put delete`
+- **Path Patterns**: `--paths "/api/*" --exclude-paths "/admin/*"`
+- **Tags**: `--tags public documents --exclude-tags internal`
+- **Operation IDs**: `--operation-ids list_docs get_doc --exclude-operation-ids delete_all`
 
-```bash
-# Expose GET and POST endpoints
-python main.py swagger.json --methods get post
-
-# Expose all methods except DELETE
-python main.py swagger.json --methods get post put patch head options
-```
-
-### Path Patterns
-
-Include or exclude specific paths (supports wildcards):
+## Examples
 
 ```bash
-# Include only specific paths
-python main.py swagger.json --paths "/documents/*" "/agents/*"
+# Public read-only API
+mcp-swagger api.json --methods get --tags public --exclude-paths "/admin/*"
 
-# Exclude admin endpoints
-python main.py swagger.json --exclude-paths "/admin/*" "/internal/*"
+# Specific operations only
+mcp-swagger api.json --operation-ids list_docs get_doc search_docs
 
-# Combine include and exclude
-python main.py swagger.json \
-  --paths "/api/v1/*" \
-  --exclude-paths "/api/v1/admin/*"
+# Preview generated tools without starting server
+mcp-swagger api.json --dry-run --methods get post
 ```
 
-### Swagger Tags
+## Configuration
 
-Filter by Swagger tags:
+### Command Line Options
 
-```bash
-# Include only specific tags
-python main.py swagger.json --tags documents agents
+- `--host`: Server host (default: localhost)
+- `--port`: Server port (default: 8080)
+- `--transport`: Transport protocol: `sse` or `streamable-http` (default)
+- `--timeout`: Request timeout in seconds (default: 30)
+- `--dry-run`: Preview tools without starting server
 
-# Exclude certain tags
-python main.py swagger.json --exclude-tags internal deprecated
-```
-
-### Operation IDs
-
-Filter by specific operation IDs:
-
-```bash
-# Include specific operations
-python main.py swagger.json \
-  --operation-ids get_document create_document list_documents
-
-# Exclude specific operations
-python main.py swagger.json \
-  --exclude-operation-ids delete_all debug_endpoint
-```
-
-## Complex Filtering Examples
-
-### Example 1: Public Read-Only API
-
-Expose only GET endpoints for public-facing resources:
-
-```bash
-python main.py swagger.json \
-  --methods get \
-  --tags public \
-  --exclude-paths "/internal/*" "/admin/*"
-```
-
-### Example 2: Document Management
-
-Expose full CRUD operations for documents but read-only for everything else:
-
-```bash
-python main.py swagger.json \
-  --methods get \
-  --paths "/documents/*" \
-  --methods get post put delete \
-  --paths "/agents/*" \
-  --methods get
-```
-
-### Example 3: Specific Operations Only
-
-Expose only specific, whitelisted operations:
-
-```bash
-python main.py swagger.json \
-  --operation-ids \
-    list_documentation \
-    get_documentation \
-    search_documents \
-    agent_assistance
-```
-
-## Server Options
-
-### Transport Protocol
-
-```bash
-# Use SSE transport
-python main.py swagger.json --transport sse
-
-# Use streamable HTTP (default)
-python main.py swagger.json --transport streamable-http
-```
-
-### Host and Port
-
-```bash
-python main.py swagger.json --host localhost --port 9000
-```
-
-### Dry Run
-
-Preview what tools would be generated without starting the server:
-
-```bash
-python main.py swagger.json --dry-run --methods get post
-```
-
-## Environment Variables
+### Environment Variables
 
 - `API_BASE_URL`: Default base URL for the API
 - `API_TOKEN`: API token for authentication
 
-## Docker Support
-
-Build and run with Docker:
+## Docker
 
 ```bash
-# Build the image
+# Build image
 docker build -t mcp-swagger .
 
-# Run with environment variables
+# Run with configuration
 docker run -p 8080:8080 \
   -e API_BASE_URL=https://api.example.com \
   -e API_TOKEN=your-token \
   -v $(pwd)/swagger.json:/app/swagger.json \
-  mcp-swagger \
-  /app/swagger.json --methods get post
+  mcp-swagger /app/swagger.json --methods get post
 ```
 
 ## Architecture
 
-The server is organized into clean, modular components:
-
-- **`config/`**: CLI argument parsing and application settings
-- **`filters/`**: Endpoint filtering logic with flexible pattern matching
-- **`models/`**: Data models for parameters and tools
-- **`parsers/`**: Swagger specification parsing and schema generation
-- **`api_client/`**: HTTP client and security handling
-- **`generators/`**: Tool generation from Swagger operations
-- **`utils/`**: Logging and output formatting
-- **`main.py`**: Main entry point and server orchestration
+- **`config/`**: CLI parsing and settings
+- **`filters/`**: Endpoint filtering logic
+- **`generators/`**: MCP tool generation
+- **`parsers/`**: OpenAPI spec parsing
+- **`api_client/`**: HTTP client and auth
+- **`models/`**: Data models
+- **`utils/`**: Utilities and logging
 
 ## How It Works
 
-1. **Specification Loading**: Loads Swagger/OpenAPI spec from file or URL
-2. **Filtering**: Applies filters to select which endpoints to expose
-3. **Tool Generation**: Creates FastMCP tools with:
-   - Comprehensive descriptions from Swagger metadata
-   - Parameter validation and type hints
-   - Automatic authentication header injection
-   - Error handling and response formatting
-4. **Server Start**: Launches FastMCP server with generated tools
+1. Load OpenAPI/Swagger specification (file or URL)
+2. Apply filters to select endpoints
+3. Generate FastMCP tools with parameter validation and auth
+4. Start MCP server with generated tools
 
-## Tool Naming
-
-Tools are named using the Swagger `operationId` if available, otherwise a name is generated from the HTTP method and path:
-
-- `get_document` (from operationId)
-- `get_documents_doc_id` (generated from GET /documents/{doc_id})
-
-## Parameter Handling
-
-- **Path parameters**: Automatically substituted in URLs
-- **Query parameters**: Added as query strings
-- **Body parameters**: Sent as JSON request body
-- **Headers**: Authentication headers automatically added
-
-## Response Format
-
-Successful responses return the JSON response from the API. Error responses include:
-
-```json
-{
-  "error": "Error message",
-  "status_code": 404,
-  "response": "Raw response text"
-}
-```
-
-## Limitations
-
-- Currently supports Bearer token authentication only
-- Request body schema validation is basic
-- File uploads not yet supported
-- WebSocket endpoints not supported
-
-## Examples with the Provided Swagger
-
-Using the included `documentation_swagger.json`:
+## Development
 
 ```bash
-# Expose only document reading operations
-python main.py ../documentation_swagger.json \
-  --methods get \
-  --tags documents
+# Install with dev dependencies
+pip install -e ".[dev]"
 
-# Expose document and agent operations
-python main.py ../documentation_swagger.json \
-  --methods get post \
-  --tags documents agents \
-  --exclude-operation-ids delete_documentation
+# Run tests
+pytest
 
-# Full access except admin operations
-python main.py ../documentation_swagger.json \
-  --methods get post put delete \
-  --exclude-paths "*/admin/*" "*/internal/*"
+# Format and lint
+ruff check src tests
+ruff format src tests
+
+# Type checking
+mypy src
 ```
+
+## License
+
+MIT
