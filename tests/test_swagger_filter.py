@@ -15,7 +15,7 @@ import pytest
 
 # Add parent directory to path to import from filters
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from filters.swagger_filter import SwaggerFilter
+from mcp_swagger.filters.swagger_filter import SwaggerFilter
 
 
 class TestSwaggerFilter:

@@ -9,10 +9,11 @@ import pytest
 # Add parent directory to path to import from parsers
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from api_client import SecurityHandler
 from fastmcp import FastMCP
-from filters import SwaggerFilter
-from generators import ToolGenerator
+
+from mcp_swagger.api_client import SecurityHandler
+from mcp_swagger.filters import SwaggerFilter
+from mcp_swagger.generators import ToolGenerator
 
 
 class TestPathLevelParameters:
@@ -70,7 +71,9 @@ class TestPathLevelParameters:
 
         # Assert
         expected_tool_count = 2  # GET and DELETE operations
-        assert tool_count == expected_tool_count, f"Should generate {expected_tool_count} tools (GET and DELETE)"
+        assert tool_count == expected_tool_count, (
+            f"Should generate {expected_tool_count} tools (GET and DELETE)"
+        )
 
         # Both tools should have the path parameter
         for tool in tools:

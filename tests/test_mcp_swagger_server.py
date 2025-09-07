@@ -14,8 +14,8 @@ import pytest
 
 # Add parent directory to path to import main module
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from config import Settings
-from main import MCPSwaggerServer
+from mcp_swagger.config import Settings
+from mcp_swagger.main import MCPSwaggerServer
 
 
 class TestMCPSwaggerServer:

@@ -1,0 +1,25 @@
+name: Docker Validation
+
+on:
+  push:
+    branches: [master]
+    paths:
+      - "Dockerfile"
+      - ".github/workflows/docker-validation.yml"
+  pull_request:
+    branches: [master]
+    paths:
+      - "Dockerfile"
+      - ".github/workflows/docker-validation.yml"
+
+jobs:
+  hadolint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lint root Dockerfile
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: Dockerfile

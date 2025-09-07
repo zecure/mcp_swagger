@@ -3,11 +3,12 @@
 from collections.abc import Callable
 from typing import Any, ClassVar
 
-from api_client import HTTPClient, SecurityHandler
 from fastmcp import FastMCP
-from filters import SwaggerFilter
-from models import ParameterInfo, ToolInfo
-from parsers import ParameterParser, SchemaParser
+
+from mcp_swagger.api_client import HTTPClient, SecurityHandler
+from mcp_swagger.filters import SwaggerFilter
+from mcp_swagger.models import ParameterInfo, ToolInfo
+from mcp_swagger.parsers import ParameterParser, SchemaParser
 
 
 class ToolGenerator:

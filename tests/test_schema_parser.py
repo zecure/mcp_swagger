@@ -15,8 +15,8 @@ from pydantic import BaseModel, ValidationError
 
 # Add parent directory to path to import from parsers
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from models.parameter import ParameterInfo
-from parsers.schema_parser import SchemaParser
+from mcp_swagger.models.parameter import ParameterInfo
+from mcp_swagger.parsers.schema_parser import SchemaParser
 
 
 class TestSchemaParser:

@@ -1,0 +1,145 @@
+[build-system]
+requires = ["setuptools>=80.8", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp_swagger"
+version = "0.1.0"
+authors = [
+    {name = "Hendrik Buchwald", email = "hb@zecure.org"},
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp==2.12.2",
+    "httpx>=0.25.0",
+    "pydantic>=2.0.0",
+    "typing-extensions>=4.0.0",
+]
+
+[project.scripts]
+mcp-swagger = "mcp_swagger.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.1",
+    "pytest-cov==6.2.1",
+    "pytest-asyncio==1.1.0",
+    "aioresponses>=0.7.8",
+    "ruff==0.12.8",
+    "mypy==1.17.1",
+    "pip-tools==7.5.0",
+]
+
+[tool.ruff]
+line-length = 88
+indent-width = 4
+
+[tool.ruff.lint]
+preview = true
+unfixable = []
+select = [
+    "E",   # pycodestyle errors
+    "F",   # pyflakes
+    "I",   # isort
+    "UP",  # pyupgrade
+    "C",   # flake8-comprehensions
+    "B",   # flake8-bugbear
+    "W",   # pycodestyle warnings
+    "D",   # pydocstyle
+    "N",   # flake8-naming
+    "COM", # flake8-commas
+    "S",   # flake8-bandit
+    "BLE", # flake8-blind-except
+    "A",   # flake8-builtins
+    "PT",  # flake8-pytest-style
+    "SIM", # flake8-simplify
+    "TD",  # flake8-todos
+    "PD",  # pandas-vet
+    "PL",  # pylint
+    "NPY", # numpy
+    "RUF", # ruff-specific rules
+    "ANN", # flake8-annotations
+    "TCH", # flake8-type-checking
+    "TRY", # flake8-try-except-raise
+]
+ignore = [
+    "COM812",  # Missing trailing comma
+    "D203",    # One blank line before class docstring
+    "D211",    # No blank lines before class docstring
+    "D213",    # Multi-line docstring summary should start at the second line
+    "S105",    # Possible hardcoded password
+    "S106",    # Possible hardcoded password
+    "PLR6301", # Method could be a function - common in API endpoints
+    "E501",    # Line too long
+    "TRY003",  # Avoid specifying long messages outside exception class
+    "PLR0913", # Too many arguments in function definition
+    "PLR0917", # Too many positional arguments
+    "S110",    # try-except-pass detected, consider logging the exception
+    "BLE001",  # Do not catch blind exception
+    "PLR0904", # Too many public methods
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*.py" = [
+    "ANN001",   # Missing type annotation for function argument
+    "ANN101",   # Missing type annotation for self in method
+    "ANN201",   # Missing return type annotation for public function
+    "ANN204",   # Missing return type annotation for special method
+    "S101",     # Use of assert detected
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mcp_swagger = ["py.typed"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["mcp_swagger"]
+section-order = [
+    "future",
+    "standard-library",
+    "third-party",
+    "first-party",
+    "local-folder"
+]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.mypy]
+# Module resolution settings
+mypy_path = "src"
+namespace_packages = true
+implicit_reexport = true
+follow_imports = "silent"
+exclude = ["build/", "dist/", ".eggs/"]
+
+# Type checking strictness
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+check_untyped_defs = false
+disallow_untyped_decorators = false
+disallow_subclassing_any = false
+disallow_any_unimported = false
+disallow_any_generics = false
+
+# Error reporting settings
+no_implicit_optional = true
+strict_optional = true
+warn_redundant_casts = true
+warn_no_return = true
+warn_return_any = false
+warn_unused_ignores = false
+ignore_errors = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

@@ -3,7 +3,7 @@
 import json
 from typing import Any
 
-from models.parameter import ParameterInfo
+from mcp_swagger.models.parameter import ParameterInfo
 
 
 class ParameterParser:

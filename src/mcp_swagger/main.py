@@ -4,13 +4,19 @@
 import sys
 from typing import Any
 
-from api_client import SecurityHandler
-from config import Settings, parse_arguments
 from fastmcp import FastMCP
-from filters import SwaggerFilter
-from generators import ToolGenerator
-from parsers import SpecLoader
-from utils import print_banner, print_server_info, print_summary, setup_logging
+
+from mcp_swagger.api_client import SecurityHandler
+from mcp_swagger.config import Settings, parse_arguments
+from mcp_swagger.filters import SwaggerFilter
+from mcp_swagger.generators import ToolGenerator
+from mcp_swagger.parsers import SpecLoader
+from mcp_swagger.utils import (
+    print_banner,
+    print_server_info,
+    print_summary,
+    setup_logging,
+)
 
 
 class MCPSwaggerServer:
