@@ -1,2 +1,0 @@
-[console_scripts]
-mcp-swagger = mcp_swagger.main:main
