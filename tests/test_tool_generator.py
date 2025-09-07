@@ -13,8 +13,8 @@ import pytest
 
 # Add parent directory to path to import from generators
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from generators.tool_generator import ToolGenerator
-from models import ParameterInfo, ToolInfo
+from mcp_swagger.generators.tool_generator import ToolGenerator
+from mcp_swagger.models import ParameterInfo, ToolInfo
 
 
 class TestToolGenerator:
@@ -508,7 +508,7 @@ class TestToolGenerator:
 
         # Mock the params model
         with patch(
-            "generators.tool_generator.SchemaParser.build_params_model"
+            "mcp_swagger.generators.tool_generator.SchemaParser.build_params_model"
         ) as mock_build:
             mock_model = MagicMock()
             mock_model.__name__ = "TestParams"
@@ -545,7 +545,7 @@ class TestToolGenerator:
 
         # Mock the params model to return None (no params)
         with patch(
-            "generators.tool_generator.SchemaParser.build_params_model"
+            "mcp_swagger.generators.tool_generator.SchemaParser.build_params_model"
         ) as mock_build:
             mock_build.return_value = None
 

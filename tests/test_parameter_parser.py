@@ -14,7 +14,7 @@ import pytest
 
 # Add parent directory to path to import from parsers
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from parsers.parameter_parser import ParameterParser
+from mcp_swagger.parsers.parameter_parser import ParameterParser
 
 
 class TestParameterParser:

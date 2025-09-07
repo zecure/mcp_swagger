@@ -17,6 +17,9 @@ dependencies = [
     "typing-extensions>=4.0.0",
 ]
 
+[project.scripts]
+mcp-swagger = "mcp_swagger.main:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest==8.4.1",
@@ -86,8 +89,14 @@ ignore = [
     "S101",     # Use of assert detected
 ]
 
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+mcp_swagger = ["py.typed"]
+
 [tool.ruff.lint.isort]
-known-first-party = ["app"]
+known-first-party = ["mcp_swagger"]
 section-order = [
     "future",
     "standard-library",
@@ -104,6 +113,7 @@ line-ending = "auto"
 
 [tool.mypy]
 # Module resolution settings
+mypy_path = "src"
 namespace_packages = true
 implicit_reexport = true
 follow_imports = "silent"

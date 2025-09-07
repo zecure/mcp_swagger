@@ -17,7 +17,7 @@ import pytest
 
 # Add parent directory to path to import from parsers
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from parsers.spec_loader import SpecLoader
+from mcp_swagger.parsers.spec_loader import SpecLoader
 
 
 class TestSpecLoader:

@@ -8,15 +8,11 @@ and base URL determination.
 
 import argparse
 import os
-import sys
-from pathlib import Path
 from unittest.mock import Mock, patch
 
 import pytest
 
-# Add parent directory to path to import from config
-sys.path.insert(0, str(Path(__file__).parent.parent))
-from config.settings import Settings
+from mcp_swagger.config.settings import Settings
 
 
 # Local test copies of private functions to avoid import issues

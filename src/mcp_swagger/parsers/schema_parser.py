@@ -2,8 +2,9 @@
 
 from typing import Any, ClassVar
 
-from models.parameter import ParameterInfo
 from pydantic import Field, create_model
+
+from mcp_swagger.models.parameter import ParameterInfo
 
 
 class SchemaParser:

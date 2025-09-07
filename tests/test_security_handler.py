@@ -13,7 +13,7 @@ import pytest
 
 # Add parent directory to path to import from api_client
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from api_client.security import SecurityHandler
+from mcp_swagger.api_client.security import SecurityHandler
 
 
 class TestSecurityHandler:
