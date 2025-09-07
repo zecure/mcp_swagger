@@ -100,24 +100,3 @@ docker run -p 8080:8080 \
 2. Apply filters to select endpoints
 3. Generate FastMCP tools with parameter validation and auth
 4. Start MCP server with generated tools
-
-## Development
-
-```bash
-# Install with dev dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
-# Format and lint
-ruff check src tests
-ruff format src tests
-
-# Type checking
-mypy src
-```
-
-## License
-
-MIT
