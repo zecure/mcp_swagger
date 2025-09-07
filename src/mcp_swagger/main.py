@@ -32,7 +32,7 @@ class MCPSwaggerServer:
         """
         self.settings = settings
         self.swagger_spec = swagger_spec
-        self.mcp = FastMCP(settings.server_name)
+        self.mcp = FastMCP(settings.server_name, instructions=settings.instructions)
 
         # Initialize components
         self.filter = self._create_filter()

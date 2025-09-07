@@ -98,6 +98,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token="test_token",
             server_name="test-mcp-server",
+            instructions=None,
             methods=["get", "post"],
             paths=None,
             exclude_paths=None,
@@ -154,6 +155,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["get"],  # Only GET methods
             paths=None,
             exclude_paths=None,
@@ -189,6 +191,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["get", "post", "delete"],
             paths=None,
             exclude_paths=None,
@@ -220,6 +223,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["get", "post", "delete"],
             paths=["/users/{userId}"],  # Only user detail endpoints
             exclude_paths=None,
@@ -255,6 +259,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["get", "post"],
             paths=None,
             exclude_paths=None,
@@ -290,6 +295,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["patch"],  # No PATCH methods in spec
             paths=None,
             exclude_paths=None,
@@ -321,6 +327,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token="secret_token_123",
             server_name="secure-server",
+            instructions=None,
             methods=["get"],
             paths=None,
             exclude_paths=None,
@@ -365,6 +372,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["get", "post"],
             paths=["/api/*"],
             exclude_paths=["/internal/*"],
@@ -426,6 +434,7 @@ class TestMCPSwaggerServer:
             base_url="https://api.example.com",
             api_token=None,
             server_name="test-server",
+            instructions=None,
             methods=["get", "post", "delete"],  # Allow multiple methods
             paths=["/users", "/users/*"],  # Specific paths
             exclude_paths=None,
