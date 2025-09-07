@@ -58,7 +58,14 @@ class HTTPClient:
 
                 self._log_request(method, url, response.status_code)
 
-                return self._process_response(response)
+                # Ensure we always return a proper dict for SSE transport
+                result = self._process_response(response)
+
+                # Ensure the result is serializable and properly formatted
+                if not isinstance(result, dict):
+                    result = {"data": result}
+
+                return result
 
         except Exception as e:
             self.logger.exception(f"Failed to execute API request to {url}")
