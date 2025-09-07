@@ -3,13 +3,17 @@
 
 import asyncio
 import json
-import httpx
 import sys
 
-async def test_streamable_http():
+import httpx
+
+HTTP_OK = 200
+
+
+async def test_streamable_http() -> bool:
     """Test streamable-http transport."""
     base_url = "http://localhost:8080"
-    
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         # Initialize connection
         init_msg = {
@@ -18,19 +22,20 @@ async def test_streamable_http():
             "params": {
                 "protocolVersion": "2024-11-05",
                 "capabilities": {},
-                "clientInfo": {"name": "test_client", "version": "1.0.0"}
+                "clientInfo": {"name": "test_client", "version": "1.0.0"},
             },
-            "id": 1
+            "id": 1,
         }
-        
+
         print("Sending initialize request...")
         response = await client.post(f"{base_url}/mcp", json=init_msg)
         print(f"Initialize response: {response.status_code}")
-        if response.status_code == 200:
+        if response.status_code == HTTP_OK:
             data = response.json()
             print(f"Response: {json.dumps(data, indent=2)}")
             return True
         return False
+
 
 if __name__ == "__main__":
     success = asyncio.run(test_streamable_http())
