@@ -61,14 +61,21 @@ mcp-swagger api.json --dry-run --methods get post
 
 - `--host`: Server host (default: localhost)
 - `--port`: Server port (default: 8080)
-- `--transport`: Transport protocol: `sse` or `streamable-http` (default)
+- `--transport`: Transport protocol: `stdio`, `sse`, or `streamable-http` (default: stdio)
 - `--timeout`: Request timeout in seconds (default: 30)
 - `--dry-run`: Preview tools without starting server
+
+> **Note:** There is a known issue with SSE transport in FastMCP 2.12.2 causing session routing failures. Use `streamable-http` for network transport instead.
 
 ### Environment Variables
 
 - `API_BASE_URL`: Default base URL for the API
 - `API_TOKEN`: API token for authentication
+- `MCP_TRANSPORT`: Transport protocol (stdio, sse, streamable-http)
+- `SWAGGER_URL`: URL or path to Swagger/OpenAPI spec
+- `BASE_URL`: Base URL for API requests (overrides spec)
+- `HOST`: Server host for network transports
+- `PORT`: Server port for network transports
 
 ## Docker
 
