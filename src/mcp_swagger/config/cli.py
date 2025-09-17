@@ -82,6 +82,11 @@ def _add_filtering_options(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--exclude-operation-ids", nargs="+", help="Specific operation IDs to exclude"
     )
+    parser.add_argument(
+        "--exclude-attributes",
+        nargs="+",
+        help="Model attributes to exclude from responses using dot-notation (e.g., user.email data.password)",
+    )
 
 
 def _add_server_options(parser: argparse.ArgumentParser) -> None:
@@ -138,10 +143,14 @@ Examples:
   # Filter by operation IDs
   python main.py swagger.json --operation-ids get_document create_document
 
+  # Exclude sensitive attributes from responses
+  python main.py swagger.json --exclude-attributes user.email user.password data.secret
+
   # Complex filtering
   python main.py swagger.json \\
     --methods get post \\
     --paths "/api/v1/*" \\
     --exclude-paths "/api/v1/admin/*" \\
-    --tags public
+    --tags public \\
+    --exclude-attributes user.password data.secret
     """

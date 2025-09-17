@@ -9,6 +9,7 @@ from mcp_swagger.api_client import HTTPClient, SecurityHandler
 from mcp_swagger.filters import SwaggerFilter
 from mcp_swagger.models import ParameterInfo, ToolInfo
 from mcp_swagger.parsers import ParameterParser, SchemaParser
+from mcp_swagger.utils import filter_response_attributes
 
 
 class ToolGenerator:
@@ -32,6 +33,7 @@ class ToolGenerator:
         filter_config: SwaggerFilter,
         mcp_server: FastMCP,
         timeout: float = 600.0,
+        exclude_attributes: list[str] | None = None,
     ) -> None:
         """Initialize the tool generator.
 
@@ -42,6 +44,7 @@ class ToolGenerator:
             filter_config: Filter configuration
             mcp_server: FastMCP server instance
             timeout: Timeout for HTTP requests in seconds
+            exclude_attributes: List of attribute paths to exclude from responses
 
         """
         self.spec = swagger_spec
@@ -51,6 +54,7 @@ class ToolGenerator:
         self.filter = filter_config
         self.mcp = mcp_server
         self.http_client = HTTPClient(timeout=timeout)
+        self.exclude_attributes = exclude_attributes
         self.generated_tools: list[ToolInfo] = []
 
     def generate_all_tools(self) -> int:
@@ -207,6 +211,10 @@ class ToolGenerator:
             elif not isinstance(result, dict):
                 result = {"data": result}
 
+            # Apply attribute filtering if configured
+            if self.exclude_attributes:
+                result = filter_response_attributes(result, self.exclude_attributes)
+
             return result
 
         api_tool.__name__ = tool_info.name
@@ -231,6 +239,10 @@ class ToolGenerator:
                 result = {"status": "success"}
             elif not isinstance(result, dict):
                 result = {"data": result}
+
+            # Apply attribute filtering if configured
+            if self.exclude_attributes:
+                result = filter_response_attributes(result, self.exclude_attributes)
 
             return result
 
