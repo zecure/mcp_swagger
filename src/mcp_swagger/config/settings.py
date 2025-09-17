@@ -24,6 +24,7 @@ class Settings:
     exclude_tags: list[str] | None
     operation_ids: list[str] | None
     exclude_operation_ids: list[str] | None
+    exclude_attributes: list[str] | None
 
     # Server options
     host: str
@@ -50,6 +51,7 @@ class Settings:
             exclude_tags=args.exclude_tags,
             operation_ids=args.operation_ids,
             exclude_operation_ids=args.exclude_operation_ids,
+            exclude_attributes=args.exclude_attributes,
             host=args.host,
             port=args.port,
             transport=args.transport,

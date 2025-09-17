@@ -44,6 +44,7 @@ class MCPSwaggerServer:
             filter_config=self.filter,
             mcp_server=self.mcp,
             timeout=settings.timeout,
+            exclude_attributes=settings.exclude_attributes,
         )
 
     def generate_tools(self) -> int:
