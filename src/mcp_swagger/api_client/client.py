@@ -6,6 +6,8 @@ from typing import Any
 
 import httpx
 
+from mcp_swagger.models import HTTPErrorResponse
+
 
 class HTTPClient:
     """HTTP client for executing API requests."""
@@ -69,7 +71,10 @@ class HTTPClient:
 
         except Exception as e:
             self.logger.exception(f"Failed to execute API request to {url}")
-            return {"error": f"Failed to execute API request: {e!s}"}
+            error_response = HTTPErrorResponse(
+                status_code=0, error="Request execution failed", details=str(e)
+            )
+            return error_response.to_dict()
 
     def _log_request(self, method: str, url: str, status_code: int) -> None:
         """Log request information."""
@@ -104,8 +109,9 @@ class HTTPClient:
 
     def _create_error_response(self, response: httpx.Response) -> dict[str, Any]:
         """Create error response dictionary."""
-        return {
-            "error": f"API request failed with status {response.status_code}",
-            "status_code": response.status_code,
-            "response": response.text,
-        }
+        error_response = HTTPErrorResponse(
+            status_code=response.status_code,
+            error=f"API request failed with status {response.status_code}",
+            details=response.text,
+        )
+        return error_response.to_dict()

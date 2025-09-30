@@ -7,7 +7,15 @@ from fastmcp import FastMCP
 
 from mcp_swagger.api_client import HTTPClient, SecurityHandler
 from mcp_swagger.filters import SwaggerFilter
-from mcp_swagger.models import ParameterInfo, ToolInfo
+from mcp_swagger.models import (
+    APIResponse,
+    ParameterInfo,
+    SwaggerOperation,
+    SwaggerParameter,
+    SwaggerPathItem,
+    SwaggerSpec,
+    ToolInfo,
+)
 from mcp_swagger.parsers import ParameterParser, SchemaParser
 from mcp_swagger.utils import filter_response_attributes
 
@@ -27,7 +35,7 @@ class ToolGenerator:
 
     def __init__(
         self,
-        swagger_spec: dict[str, Any],
+        swagger_spec: SwaggerSpec,
         base_url: str,
         security_handler: SecurityHandler,
         filter_config: SwaggerFilter,
@@ -64,9 +72,7 @@ class ToolGenerator:
             Number of tools generated
 
         """
-        paths = self.spec.get("paths", {})
-
-        for path, path_item in paths.items():
+        for path, path_item in self.spec.paths.items():
             self._process_path(path, path_item)
 
         return len(self.generated_tools)
@@ -77,16 +83,16 @@ class ToolGenerator:
 
     def _extract_base_path(self) -> str:
         """Extract base path from specification."""
-        if "basePath" in self.spec:
-            return self.spec["basePath"].rstrip("/")
+        if self.spec.base_path:
+            return self.spec.base_path.rstrip("/")
         return ""
 
-    def _process_path(self, path: str, path_item: dict[str, Any]) -> None:
+    def _process_path(self, path: str, path_item: SwaggerPathItem) -> None:
         """Process a single path and its operations."""
-        # Extract path-level parameters if they exist
-        path_level_params = path_item.get("parameters", [])
+        # Get all operations for this path
+        operations = path_item.get_operations()
 
-        for method, operation in path_item.items():
+        for method, operation in operations.items():
             if method not in self.VALID_HTTP_METHODS:
                 continue
 
@@ -94,29 +100,45 @@ class ToolGenerator:
                 continue
 
             # Merge path-level parameters with operation-level parameters
-            # Operation-level parameters override path-level ones with the same name
-            merged_operation = operation.copy()
-            operation_params = operation.get("parameters", [])
-
-            # Create a set of operation parameter names for deduplication
-            operation_param_names = {
-                (param.get("name"), param.get("in")) for param in operation_params
-            }
-
-            # Add path-level parameters that aren't overridden by operation-level ones
-            merged_params = operation_params.copy()
-            for path_param in path_level_params:
-                param_key = (path_param.get("name"), path_param.get("in"))
-                if param_key not in operation_param_names:
-                    merged_params.append(path_param)
-
-            # Update the operation with merged parameters
-            if merged_params:
-                merged_operation["parameters"] = merged_params
+            merged_operation = self._merge_parameters(operation, path_item.parameters)
 
             self._generate_tool(path, method, merged_operation)
 
-    def _generate_tool(self, path: str, method: str, operation: dict[str, Any]) -> None:
+    def _merge_parameters(
+        self, operation: SwaggerOperation, path_level_params: list[SwaggerParameter]
+    ) -> SwaggerOperation:
+        """Merge path-level parameters with operation-level parameters."""
+        # Create a copy of the operation to avoid modifying the original
+        merged_params = operation.parameters.copy()
+
+        # Create a set of operation parameter names for deduplication
+        operation_param_keys = {
+            (param.name, param.in_) for param in operation.parameters
+        }
+
+        # Add path-level parameters that aren't overridden by operation-level ones
+        for path_param in path_level_params:
+            param_key = (path_param.name, path_param.in_)
+            if param_key not in operation_param_keys:
+                merged_params.append(path_param)
+
+        # Create a new operation with merged parameters
+        return SwaggerOperation(
+            operation_id=operation.operation_id,
+            summary=operation.summary,
+            description=operation.description,
+            consumes=operation.consumes,
+            produces=operation.produces,
+            parameters=merged_params,
+            responses=operation.responses,
+            tags=operation.tags,
+            security=operation.security,
+            deprecated=operation.deprecated,
+        )
+
+    def _generate_tool(
+        self, path: str, method: str, operation: SwaggerOperation
+    ) -> None:
         """Generate a single tool from an operation."""
         # Parse operation details
         tool_info = self._create_tool_info(path, method, operation)
@@ -131,7 +153,7 @@ class ToolGenerator:
         self.generated_tools.append(tool_info)
 
     def _create_tool_info(
-        self, path: str, method: str, operation: dict[str, Any]
+        self, path: str, method: str, operation: SwaggerOperation
     ) -> ToolInfo:
         """Create tool information from operation."""
         # Parse parameters
@@ -146,8 +168,8 @@ class ToolGenerator:
         description = ParameterParser.build_tool_description(operation, method, path)
 
         # Create tool name
-        tool_name = operation.get(
-            "operationId", f"{method}_{path.replace('/', '_').strip('_')}"
+        tool_name = (
+            operation.operation_id or f"{method}_{path.replace('/', '_').strip('_')}"
         )
 
         return ToolInfo(
@@ -205,17 +227,22 @@ class ToolGenerator:
                 tool_info.method, url, query, json_body, headers
             )
 
-            # Ensure result is properly formatted for SSE transport
+            # Create structured response
             if result is None:
-                result = {"status": "success"}
-            elif not isinstance(result, dict):
-                result = {"data": result}
+                response = APIResponse.success()
+            elif isinstance(result, dict):
+                response = APIResponse.success(result)
+            else:
+                response = APIResponse.success({"data": result})
 
             # Apply attribute filtering if configured
-            if self.exclude_attributes:
-                result = filter_response_attributes(result, self.exclude_attributes)
+            response_dict = response.to_dict()
+            if self.exclude_attributes and response_dict.get("data"):
+                response_dict["data"] = filter_response_attributes(
+                    response_dict["data"], self.exclude_attributes
+                )
 
-            return result
+            return response_dict
 
         api_tool.__name__ = tool_info.name
         api_tool.__doc__ = tool_info.description
@@ -234,17 +261,22 @@ class ToolGenerator:
                 tool_info.method, url, None, None, headers
             )
 
-            # Ensure result is properly formatted for SSE transport
+            # Create structured response
             if result is None:
-                result = {"status": "success"}
-            elif not isinstance(result, dict):
-                result = {"data": result}
+                response = APIResponse.success()
+            elif isinstance(result, dict):
+                response = APIResponse.success(result)
+            else:
+                response = APIResponse.success({"data": result})
 
             # Apply attribute filtering if configured
-            if self.exclude_attributes:
-                result = filter_response_attributes(result, self.exclude_attributes)
+            response_dict = response.to_dict()
+            if self.exclude_attributes and response_dict.get("data"):
+                response_dict["data"] = filter_response_attributes(
+                    response_dict["data"], self.exclude_attributes
+                )
 
-            return result
+            return response_dict
 
         api_tool.__name__ = tool_info.name
         api_tool.__doc__ = tool_info.description

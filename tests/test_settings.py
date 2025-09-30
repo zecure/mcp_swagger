@@ -13,6 +13,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from mcp_swagger.config.settings import Settings
+from mcp_swagger.models.swagger import SwaggerSpec
 
 
 # Local test copies of private functions to avoid import issues
@@ -67,12 +68,14 @@ class TestSettings:
             dry_run=False,
         )
 
-        self.sample_spec = {
-            "swagger": "2.0",
-            "host": "api.example.com",
-            "schemes": ["https"],
-            "basePath": "/v1",
-        }
+        self.sample_spec = SwaggerSpec.from_dict(
+            {
+                "swagger": "2.0",
+                "host": "api.example.com",
+                "schemes": ["https"],
+                "basePath": "/v1",
+            }
+        )
 
     def test_from_args_basic(self) -> None:
         """Test Settings creation from command-line arguments."""
@@ -127,8 +130,9 @@ class TestSettings:
         )
 
         # Act
+        swagger_spec = SwaggerSpec.from_dict({})
         with patch.dict(os.environ, {}, clear=True):
-            settings = Settings.from_args(minimal_args, {})
+            settings = Settings.from_args(minimal_args, swagger_spec)
 
         # Assert
         assert settings.swagger_spec_path == "spec.yaml"
@@ -376,7 +380,8 @@ class TestSettings:
         )
 
         # Act
-        settings = Settings.from_args(args, {})
+        swagger_spec = SwaggerSpec.from_dict({})
+        settings = Settings.from_args(args, swagger_spec)
 
         # Assert - Lists are preserved correctly
         assert settings.methods == ["get", "post", "put"]

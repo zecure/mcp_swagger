@@ -1,7 +1,8 @@
 """Filter for selecting which endpoints to expose from a Swagger spec."""
 
 import re
-from typing import Any
+
+from mcp_swagger.models import SwaggerOperation
 
 
 class SwaggerFilter:
@@ -39,7 +40,9 @@ class SwaggerFilter:
         self.operation_ids = set(operation_ids or [])
         self.exclude_operation_ids = set(exclude_operation_ids or [])
 
-    def should_include(self, path: str, method: str, operation: dict[str, Any]) -> bool:
+    def should_include(
+        self, path: str, method: str, operation: SwaggerOperation
+    ) -> bool:
         """Determine if an endpoint should be included based on filters.
 
         Logic:
@@ -47,7 +50,7 @@ class SwaggerFilter:
         2. Otherwise, check if method matches and other filters pass
         """
         method = method.lower()
-        op_id = operation.get("operationId")
+        op_id = operation.operation_id
 
         # Check if explicitly included by ID
         is_explicitly_included = self.operation_ids and op_id in self.operation_ids
@@ -64,9 +67,9 @@ class SwaggerFilter:
         pattern = re.escape(pattern).replace(r"\*", ".*")
         return re.compile(f"^{pattern}$")
 
-    def _check_excludes_only(self, path: str, operation: dict[str, Any]) -> bool:
+    def _check_excludes_only(self, path: str, operation: SwaggerOperation) -> bool:
         """Check only exclusion filters (for explicitly included operations)."""
-        op_id = operation.get("operationId")
+        op_id = operation.operation_id
 
         # Check excluded operation IDs
         if op_id in self.exclude_operation_ids:
@@ -77,11 +80,11 @@ class SwaggerFilter:
             return False
 
         # Check excluded tags
-        op_tags = set(operation.get("tags", []))
+        op_tags = set(operation.tags or [])
         return not (self.exclude_tags and op_tags.intersection(self.exclude_tags))
 
     def _apply_standard_filters(
-        self, path: str, method: str, operation: dict[str, Any]
+        self, path: str, method: str, operation: SwaggerOperation
     ) -> bool:
         """Apply standard filtering logic."""
         # Check method
@@ -95,9 +98,9 @@ class SwaggerFilter:
         # Check path patterns
         return self._check_path_patterns(path)
 
-    def _check_operation_filters(self, operation: dict[str, Any]) -> bool:
+    def _check_operation_filters(self, operation: SwaggerOperation) -> bool:
         """Check operation-level filters (IDs and tags)."""
-        op_id = operation.get("operationId")
+        op_id = operation.operation_id
 
         # Check excluded operation IDs
         if op_id in self.exclude_operation_ids:
@@ -108,7 +111,7 @@ class SwaggerFilter:
             return False
 
         # Check tags
-        op_tags = set(operation.get("tags", []))
+        op_tags = set(operation.tags or [])
 
         # Check included tags
         if self.tags and not op_tags.intersection(self.tags):

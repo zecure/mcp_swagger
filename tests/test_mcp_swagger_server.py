@@ -16,6 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from mcp_swagger.config import Settings
 from mcp_swagger.main import MCPSwaggerServer
+from mcp_swagger.models import SwaggerSpec
 
 
 class TestMCPSwaggerServer:
@@ -23,7 +24,7 @@ class TestMCPSwaggerServer:
 
     def setup_method(self) -> None:
         """Set up test fixtures for each test method."""
-        self.sample_spec = {
+        sample_spec_dict = {
             "swagger": "2.0",
             "info": {"title": "Test API", "version": "1.0.0"},
             "host": "api.example.com",
@@ -92,6 +93,9 @@ class TestMCPSwaggerServer:
                 "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
             },
         }
+
+        # Convert dictionary to SwaggerSpec object
+        self.sample_spec = SwaggerSpec.from_dict(sample_spec_dict)
 
         self.test_settings = Settings(
             swagger_spec_path="test.json",
@@ -354,7 +358,7 @@ class TestMCPSwaggerServer:
 
         # Assert
         assert server.security_handler.api_token == "secret_token_123"
-        assert "Bearer" in server.security_handler.security_definitions
+        assert "Bearer" in server.security_handler.spec.security_definitions
 
     def test_server_run_method(self) -> None:
         """Test server run method calls FastMCP correctly."""
@@ -412,7 +416,31 @@ class TestMCPSwaggerServer:
     def test_base_path_extraction(self) -> None:
         """Test that base path is correctly extracted from spec."""
         # Arrange
-        spec_with_base = {**self.sample_spec, "basePath": "/api/v2"}
+        # Create a copy of the original spec dict and modify the base path
+        spec_dict = {
+            "swagger": "2.0",
+            "info": {"title": "Test API", "version": "1.0.0"},
+            "host": "api.example.com",
+            "basePath": "/api/v2",  # Different base path
+            "schemes": ["https"],
+            "paths": {
+                "/users": {
+                    "get": {
+                        "operationId": "listUsers",
+                        "summary": "List all users",
+                        "tags": ["users"],
+                        "parameters": [
+                            {"name": "limit", "in": "query", "type": "integer"}
+                        ],
+                        "responses": {"200": {"description": "Success"}},
+                    }
+                }
+            },
+            "securityDefinitions": {
+                "Bearer": {"type": "apiKey", "name": "Authorization", "in": "header"}
+            },
+        }
+        spec_with_base = SwaggerSpec.from_dict(spec_dict)
         server = MCPSwaggerServer(self.test_settings, spec_with_base)
 
         # Act
@@ -424,7 +452,12 @@ class TestMCPSwaggerServer:
     def test_server_with_empty_spec(self) -> None:
         """Test server with empty specification."""
         # Arrange
-        empty_spec = {"swagger": "2.0", "paths": {}}
+        empty_spec_dict = {
+            "swagger": "2.0",
+            "info": {"title": "Empty API", "version": "1.0.0"},
+            "paths": {},
+        }
+        empty_spec = SwaggerSpec.from_dict(empty_spec_dict)
 
         # Act
         server = MCPSwaggerServer(self.test_settings, empty_spec)

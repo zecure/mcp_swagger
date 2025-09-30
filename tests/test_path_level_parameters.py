@@ -14,6 +14,7 @@ from fastmcp import FastMCP
 from mcp_swagger.api_client import SecurityHandler
 from mcp_swagger.filters import SwaggerFilter
 from mcp_swagger.generators import ToolGenerator
+from mcp_swagger.models import SwaggerSpec
 
 
 class TestPathLevelParameters:
@@ -28,8 +29,9 @@ class TestPathLevelParameters:
     def test_path_level_parameters_inherited(self) -> None:
         """Test that path-level parameters are inherited by operations."""
         # Arrange - spec with path-level parameters
-        swagger_spec = {
+        swagger_spec_dict = {
             "swagger": "2.0",
+            "info": {"title": "Test API", "version": "1.0.0"},
             "basePath": "/api/v1",
             "paths": {
                 "/users/{userId}": {
@@ -55,6 +57,7 @@ class TestPathLevelParameters:
                 }
             },
         }
+        swagger_spec = SwaggerSpec.from_dict(swagger_spec_dict)
 
         security_handler = SecurityHandler(None, swagger_spec)
         generator = ToolGenerator(
@@ -86,8 +89,9 @@ class TestPathLevelParameters:
     def test_operation_parameters_override_path_level(self) -> None:
         """Test that operation-level parameters override path-level ones."""
         # Arrange - spec where operation overrides path-level parameter
-        swagger_spec = {
+        swagger_spec_dict = {
             "swagger": "2.0",
+            "info": {"title": "Test API", "version": "1.0.0"},
             "basePath": "/api/v1",
             "paths": {
                 "/items/{itemId}": {
@@ -124,6 +128,7 @@ class TestPathLevelParameters:
                 }
             },
         }
+        swagger_spec = SwaggerSpec.from_dict(swagger_spec_dict)
 
         security_handler = SecurityHandler(None, swagger_spec)
         generator = ToolGenerator(
@@ -154,8 +159,9 @@ class TestPathLevelParameters:
     def test_mixed_path_and_operation_parameters(self) -> None:
         """Test mixing path-level and operation-level parameters."""
         # Arrange
-        swagger_spec = {
+        swagger_spec_dict = {
             "swagger": "2.0",
+            "info": {"title": "Test API", "version": "1.0.0"},
             "basePath": "/api/v1",
             "paths": {
                 "/projects/{projectId}/tasks/{taskId}": {
@@ -191,6 +197,7 @@ class TestPathLevelParameters:
                 }
             },
         }
+        swagger_spec = SwaggerSpec.from_dict(swagger_spec_dict)
 
         security_handler = SecurityHandler(None, swagger_spec)
         generator = ToolGenerator(
@@ -221,8 +228,9 @@ class TestPathLevelParameters:
     def test_url_substitution_with_path_level_params(self) -> None:
         """Test that URL substitution works correctly with path-level parameters."""
         # Arrange
-        swagger_spec = {
+        swagger_spec_dict = {
             "swagger": "2.0",
+            "info": {"title": "Test API", "version": "1.0.0"},
             "basePath": "/api/v1",
             "paths": {
                 "/orgs/{orgId}/users/{userId}": {
@@ -248,6 +256,7 @@ class TestPathLevelParameters:
                 }
             },
         }
+        swagger_spec = SwaggerSpec.from_dict(swagger_spec_dict)
 
         security_handler = SecurityHandler(None, swagger_spec)
         generator = ToolGenerator(

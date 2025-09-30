@@ -17,6 +17,7 @@ import pytest
 
 # Add parent directory to path to import from parsers
 sys.path.insert(0, str(Path(__file__).parent.parent))
+from mcp_swagger.models.swagger import SwaggerSpec
 from mcp_swagger.parsers.spec_loader import SpecLoader
 
 
@@ -57,10 +58,13 @@ class TestSpecLoader:
             spec = SpecLoader.load(temp_path)
 
             # Assert
-            assert spec == self.sample_spec
-            assert spec["swagger"] == "2.0"
-            assert spec["info"]["title"] == "Test API"
-            assert "/users" in spec["paths"]
+            expected_spec = SwaggerSpec.from_dict(self.sample_spec)
+            assert spec.swagger == expected_spec.swagger
+            assert spec.info.title == "Test API"
+            assert spec.info.version == "1.0.0"
+            assert spec.host == "api.example.com"
+            assert spec.base_path == "/v1"
+            assert "/users" in spec.paths
         finally:
             Path(temp_path).unlink()
 
@@ -76,7 +80,9 @@ class TestSpecLoader:
             spec = SpecLoader.load("http://api.example.com/swagger.json")
 
             # Assert
-            assert spec == self.sample_spec
+            expected_spec = SwaggerSpec.from_dict(self.sample_spec)
+            assert spec.swagger == expected_spec.swagger
+            assert spec.info.title == expected_spec.info.title
             mock_get.assert_called_once_with(
                 "http://api.example.com/swagger.json", timeout=600.0
             )
@@ -94,7 +100,9 @@ class TestSpecLoader:
             spec = SpecLoader.load("https://secure-api.example.com/swagger.json")
 
             # Assert
-            assert spec == self.sample_spec
+            expected_spec = SwaggerSpec.from_dict(self.sample_spec)
+            assert spec.swagger == expected_spec.swagger
+            assert spec.info.title == expected_spec.info.title
             mock_get.assert_called_once_with(
                 "https://secure-api.example.com/swagger.json", timeout=600.0
             )
@@ -208,8 +216,8 @@ class TestSpecLoader:
             spec = SpecLoader.load(temp_path)
 
             # Assert
-            assert spec["info"]["title"] == "API with Cyrillic"
-            assert spec["info"]["description"] == "描述"
+            assert spec.info.title == "API with Cyrillic"
+            assert spec.info.description == "描述"
         finally:
             Path(temp_path).unlink()
 
@@ -227,7 +235,9 @@ class TestSpecLoader:
             spec = SpecLoader.load(temp_name)
 
             # Assert
-            assert spec == self.sample_spec
+            expected_spec = SwaggerSpec.from_dict(self.sample_spec)
+            assert spec.swagger == expected_spec.swagger
+            assert spec.info.title == expected_spec.info.title
         finally:
             Path(temp_name).unlink()
 
@@ -245,7 +255,9 @@ class TestSpecLoader:
             spec = SpecLoader.load(str(temp_path))
 
             # Assert
-            assert spec == self.sample_spec
+            expected_spec = SwaggerSpec.from_dict(self.sample_spec)
+            assert spec.swagger == expected_spec.swagger
+            assert spec.info.title == expected_spec.info.title
         finally:
             temp_path.unlink()
 
@@ -304,11 +316,10 @@ class TestSpecLoader:
             spec = SpecLoader.load(temp_path)
 
             # Assert
-            assert spec == complex_spec
-            assert (
-                "$ref"
-                in spec["paths"]["/users/{id}"]["get"]["responses"]["200"]["schema"]
-            )
+            expected_spec = SwaggerSpec.from_dict(complex_spec)
+            assert spec.swagger == expected_spec.swagger
+            assert "/users/{id}" in spec.paths
+            assert "$ref" in spec.paths["/users/{id}"].get.responses["200"].schema
         finally:
             Path(temp_path).unlink()
 
@@ -332,7 +343,8 @@ class TestSpecLoader:
         with patch("httpx.get", return_value=mock_response):
             for url in url_patterns[:2]:  # Test first two to avoid too many calls
                 result = SpecLoader.load(url)
-                assert result == {"type": "url"}
+                SwaggerSpec.from_dict({"type": "url"})
+                assert isinstance(result, SwaggerSpec)
 
     def test_timeout_configuration(self) -> None:
         """Test that the timeout is properly configured for HTTP requests."""

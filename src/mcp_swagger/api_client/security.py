@@ -1,12 +1,12 @@
 """Security handler for API authentication."""
 
-from typing import Any
+from mcp_swagger.models import SwaggerOperation, SwaggerSpec
 
 
 class SecurityHandler:
     """Handler for API security and authentication."""
 
-    def __init__(self, api_token: str | None, swagger_spec: dict[str, Any]) -> None:
+    def __init__(self, api_token: str | None, swagger_spec: SwaggerSpec) -> None:
         """Initialize security handler.
 
         Args:
@@ -16,9 +16,8 @@ class SecurityHandler:
         """
         self.api_token = api_token
         self.spec = swagger_spec
-        self.security_definitions = swagger_spec.get("securityDefinitions", {})
 
-    def get_headers(self, operation: dict[str, Any]) -> dict[str, str]:
+    def get_headers(self, operation: SwaggerOperation) -> dict[str, str]:
         """Get security headers for an operation.
 
         Args:
@@ -34,14 +33,20 @@ class SecurityHandler:
         headers = {}
 
         # Get security requirements (operation-level or global)
-        security = operation.get("security", self.spec.get("security", []))
+        # Note: An empty list explicitly means no security is required
+        if operation.security is not None:
+            security = operation.security
+        else:
+            security = self.spec.security or []
 
         for sec_req in security:
             headers.update(self._process_security_requirement(sec_req))
 
         return headers
 
-    def _process_security_requirement(self, sec_req: dict[str, Any]) -> dict[str, str]:
+    def _process_security_requirement(
+        self, sec_req: dict[str, list[str]]
+    ) -> dict[str, str]:
         """Process a single security requirement."""
         headers = {}
 
@@ -52,10 +57,12 @@ class SecurityHandler:
 
         # Check other security schemes
         for key in sec_req:
-            sec_def = self.security_definitions.get(key, {})
+            sec_def = self.spec.security_definitions.get(key)
+            if not sec_def:
+                continue
 
-            if sec_def.get("type") == "apiKey" and sec_def.get("in") == "header":
-                header_name = sec_def.get("name", "Authorization")
+            if sec_def.type_ == "apiKey" and sec_def.in_ == "header":
+                header_name = sec_def.name or "Authorization"
 
                 if header_name == "Authorization":
                     headers[header_name] = f"Bearer {self.api_token}"

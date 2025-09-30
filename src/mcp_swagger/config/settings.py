@@ -3,7 +3,10 @@
 import argparse
 import os
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from mcp_swagger.models import SwaggerSpec
 
 
 @dataclass
@@ -35,7 +38,7 @@ class Settings:
 
     @classmethod
     def from_args(
-        cls, args: argparse.Namespace, swagger_spec: dict[str, Any]
+        cls, args: argparse.Namespace, swagger_spec: "SwaggerSpec"
     ) -> "Settings":
         """Create settings from command-line arguments and Swagger spec."""
         return cls(
@@ -60,7 +63,7 @@ class Settings:
         )
 
 
-def _determine_base_url(args: argparse.Namespace, swagger_spec: dict[str, Any]) -> str:
+def _determine_base_url(args: argparse.Namespace, swagger_spec: "SwaggerSpec") -> str:
     """Determine the base URL for the API."""
     if args.base_url:
         return args.base_url
@@ -71,9 +74,9 @@ def _determine_base_url(args: argparse.Namespace, swagger_spec: dict[str, Any]) 
         return base_url
 
     # Try to extract from spec
-    if "schemes" in swagger_spec and "host" in swagger_spec:
-        scheme = swagger_spec["schemes"][0] if swagger_spec["schemes"] else "http"
-        return f"{scheme}://{swagger_spec['host']}"
+    if swagger_spec.schemes and swagger_spec.host:
+        scheme = swagger_spec.schemes[0] if swagger_spec.schemes else "http"
+        return f"{scheme}://{swagger_spec.host}"
 
     return "http://localhost:8000"
 

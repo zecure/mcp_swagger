@@ -2,7 +2,6 @@
 """Main entry point for MCP Swagger server."""
 
 import sys
-from typing import Any
 
 from fastmcp import FastMCP
 
@@ -10,6 +9,7 @@ from mcp_swagger.api_client import SecurityHandler
 from mcp_swagger.config import Settings, parse_arguments
 from mcp_swagger.filters import SwaggerFilter
 from mcp_swagger.generators import ToolGenerator
+from mcp_swagger.models import SwaggerSpec
 from mcp_swagger.parsers import SpecLoader
 from mcp_swagger.utils import (
     print_banner,
@@ -22,7 +22,7 @@ from mcp_swagger.utils import (
 class MCPSwaggerServer:
     """Main server class for MCP Swagger integration."""
 
-    def __init__(self, settings: Settings, swagger_spec: dict[str, Any]) -> None:
+    def __init__(self, settings: Settings, swagger_spec: SwaggerSpec) -> None:
         """Initialize the MCP Swagger server.
 
         Args:
@@ -89,10 +89,6 @@ def main() -> None:
     # Setup logging
     setup_logging()
 
-    # Create settings first (with timeout)
-    # Note: We'll update settings after loading spec
-    Settings.from_args(args, {})
-
     # Load Swagger specification with timeout
     try:
         swagger_spec = SpecLoader.load(args.swagger_spec, timeout=args.timeout)
@@ -100,7 +96,7 @@ def main() -> None:
         print(f"Error loading Swagger specification: {e}", file=sys.stderr)
         sys.exit(1)
 
-    # Create final settings with loaded spec
+    # Create settings with loaded spec
     settings = Settings.from_args(args, swagger_spec)
 
     # Print startup information

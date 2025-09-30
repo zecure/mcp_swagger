@@ -16,6 +16,7 @@ import pytest
 # Add parent directory to path to import from filters
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from mcp_swagger.filters.swagger_filter import SwaggerFilter
+from mcp_swagger.models.swagger import SwaggerOperation
 
 
 class TestSwaggerFilter:
@@ -23,11 +24,13 @@ class TestSwaggerFilter:
 
     def setup_method(self) -> None:
         """Set up test fixtures for each test method."""
-        self.sample_operation = {
-            "operationId": "getUser",
-            "tags": ["users", "public"],
-            "summary": "Get user details",
-        }
+        self.sample_operation = SwaggerOperation.from_dict(
+            {
+                "operationId": "getUser",
+                "tags": ["users", "public"],
+                "summary": "Get user details",
+            }
+        )
 
     def test_default_filter_allows_get_only(self) -> None:
         """Test that default filter only allows GET methods."""
@@ -100,9 +103,9 @@ class TestSwaggerFilter:
         """Test filtering by Swagger tags."""
         # Arrange
         filter_config = SwaggerFilter(tags=["users"])
-        operation_with_tags = {"tags": ["users", "public"]}
-        operation_without_tags = {"tags": ["posts"]}
-        operation_no_tags = {}
+        operation_with_tags = SwaggerOperation.from_dict({"tags": ["users", "public"]})
+        operation_without_tags = SwaggerOperation.from_dict({"tags": ["posts"]})
+        operation_no_tags = SwaggerOperation.from_dict({})
 
         # Act & Assert
         assert filter_config.should_include("/path", "get", operation_with_tags), (
@@ -119,9 +122,11 @@ class TestSwaggerFilter:
         """Test exclusion by Swagger tags."""
         # Arrange
         filter_config = SwaggerFilter(exclude_tags=["internal", "deprecated"])
-        public_operation = {"tags": ["public", "users"]}
-        internal_operation = {"tags": ["internal", "metrics"]}
-        deprecated_operation = {"tags": ["deprecated"]}
+        public_operation = SwaggerOperation.from_dict({"tags": ["public", "users"]})
+        internal_operation = SwaggerOperation.from_dict(
+            {"tags": ["internal", "metrics"]}
+        )
+        deprecated_operation = SwaggerOperation.from_dict({"tags": ["deprecated"]})
 
         # Act & Assert
         assert filter_config.should_include("/path", "get", public_operation), (
@@ -138,9 +143,9 @@ class TestSwaggerFilter:
         """Test filtering by specific operation IDs."""
         # Arrange
         filter_config = SwaggerFilter(operation_ids=["getUser", "createUser"])
-        get_user_op = {"operationId": "getUser"}
-        create_user_op = {"operationId": "createUser"}
-        delete_user_op = {"operationId": "deleteUser"}
+        get_user_op = SwaggerOperation.from_dict({"operationId": "getUser"})
+        create_user_op = SwaggerOperation.from_dict({"operationId": "createUser"})
+        delete_user_op = SwaggerOperation.from_dict({"operationId": "deleteUser"})
 
         # Act & Assert - operation IDs bypass method filter
         assert filter_config.should_include("/users", "get", get_user_op), (
@@ -159,8 +164,8 @@ class TestSwaggerFilter:
         filter_config = SwaggerFilter(
             exclude_operation_ids=["deleteUser", "archiveUser"]
         )
-        get_user_op = {"operationId": "getUser"}
-        delete_user_op = {"operationId": "deleteUser"}
+        get_user_op = SwaggerOperation.from_dict({"operationId": "getUser"})
+        delete_user_op = SwaggerOperation.from_dict({"operationId": "deleteUser"})
 
         # Act & Assert
         assert filter_config.should_include("/users", "get", get_user_op), (
@@ -182,9 +187,11 @@ class TestSwaggerFilter:
         )
 
         # Test various combinations
-        public_api_op = {"tags": ["public"]}
-        deprecated_api_op = {"tags": ["public", "deprecated"]}
-        internal_api_op = {"tags": ["public"]}
+        public_api_op = SwaggerOperation.from_dict({"tags": ["public"]})
+        deprecated_api_op = SwaggerOperation.from_dict(
+            {"tags": ["public", "deprecated"]}
+        )
+        internal_api_op = SwaggerOperation.from_dict({"tags": ["public"]})
 
         # Act & Assert
         assert filter_config.should_include("/api/v1/users", "get", public_api_op), (
@@ -213,9 +220,9 @@ class TestSwaggerFilter:
                 "updateUser",
             ],  # But these operations are included
         )
-        create_op = {"operationId": "createUser"}
-        update_op = {"operationId": "updateUser"}
-        delete_op = {"operationId": "deleteUser"}
+        create_op = SwaggerOperation.from_dict({"operationId": "createUser"})
+        update_op = SwaggerOperation.from_dict({"operationId": "updateUser"})
+        delete_op = SwaggerOperation.from_dict({"operationId": "deleteUser"})
 
         # Act & Assert
         assert filter_config.should_include("/users", "post", create_op), (
@@ -286,7 +293,7 @@ class TestSwaggerFilter:
         # Arrange
         filter_with_tags = SwaggerFilter(tags=["users"])
         filter_exclude_tags = SwaggerFilter(exclude_tags=["internal"])
-        operation_no_tags = {"operationId": "someOp"}
+        operation_no_tags = SwaggerOperation.from_dict({"operationId": "someOp"})
 
         # Act & Assert
         assert not filter_with_tags.should_include("/path", "get", operation_no_tags), (
@@ -301,7 +308,7 @@ class TestSwaggerFilter:
         # Arrange
         filter_with_ids = SwaggerFilter(operation_ids=["getUser"])
         filter_exclude_ids = SwaggerFilter(exclude_operation_ids=["deleteUser"])
-        operation_no_id = {"tags": ["users"]}
+        operation_no_id = SwaggerOperation.from_dict({"tags": ["users"]})
 
         # Act & Assert
         assert not filter_with_ids.should_include("/path", "get", operation_no_id), (
@@ -318,7 +325,7 @@ class TestSwaggerFilter:
             operation_ids=["getUser"],
             exclude_operation_ids=["getUser"],  # Same ID in both
         )
-        operation = {"operationId": "getUser"}
+        operation = SwaggerOperation.from_dict({"operationId": "getUser"})
 
         # Act & Assert
         assert not filter_config.should_include("/users", "get", operation), (
@@ -333,16 +340,17 @@ def test_compile_pattern_regex_escaping() -> None:
 
     # Act & Assert
     # The dots and brackets should be treated as literals, not regex special chars
-    assert filter_config.should_include("/api/v1.0/users", "get", {}), (
+    empty_operation = SwaggerOperation.from_dict({})
+    assert filter_config.should_include("/api/v1.0/users", "get", empty_operation), (
         "Should match literal dot"
     )
-    assert not filter_config.should_include("/api/v1X0/users", "get", {}), (
-        "Should not match any character for dot"
-    )
-    assert filter_config.should_include("/api/[test]/users", "get", {}), (
+    assert not filter_config.should_include(
+        "/api/v1X0/users", "get", empty_operation
+    ), "Should not match any character for dot"
+    assert filter_config.should_include("/api/[test]/users", "get", empty_operation), (
         "Should match literal brackets"
     )
-    assert not filter_config.should_include("/api/t/users", "get", {}), (
+    assert not filter_config.should_include("/api/t/users", "get", empty_operation), (
         "Should not match character class"
     )
 

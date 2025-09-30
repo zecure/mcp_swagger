@@ -1,9 +1,8 @@
 """Parser for Swagger parameter definitions."""
 
-import json
 from typing import Any
 
-from mcp_swagger.models.parameter import ParameterInfo
+from mcp_swagger.models import ParameterInfo, SwaggerOperation
 
 
 class ParameterParser:
@@ -11,7 +10,7 @@ class ParameterParser:
 
     @staticmethod
     def parse_operation_parameters(
-        operation: dict[str, Any],
+        operation: SwaggerOperation,
     ) -> tuple[
         list[ParameterInfo],
         dict[str, ParameterInfo],
@@ -29,8 +28,24 @@ class ParameterParser:
         query_params = {}
         body_schema = None
 
-        for param in operation.get("parameters", []):
-            param_info = ParameterInfo.from_swagger_param(param)
+        for swagger_param in operation.parameters:
+            # Convert SwaggerParameter to ParameterInfo
+            param_info = ParameterInfo(
+                name=swagger_param.name,
+                required=swagger_param.required,
+                description=swagger_param.description
+                or f"Parameter {swagger_param.name}",
+                param_type=swagger_param.type_ or "string",
+                location=swagger_param.in_,
+                enum=swagger_param.enum,
+                default=swagger_param.default,
+                minimum=swagger_param.minimum,
+                maximum=swagger_param.maximum,
+                pattern=swagger_param.pattern,
+                items_type=swagger_param.items.get("type")
+                if swagger_param.items
+                else None,
+            )
             parameters.append(param_info)
 
             if param_info.location == "path":
@@ -38,17 +53,17 @@ class ParameterParser:
             elif param_info.location == "query":
                 query_params[param_info.name] = param_info
             elif param_info.location == "body":
-                body_schema = param.get("schema", {})
+                body_schema = swagger_param.schema or {}
 
         return parameters, path_params, query_params, body_schema
 
     @staticmethod
     def build_tool_description(
-        operation: dict[str, Any], method: str, path: str
+        operation: SwaggerOperation, method: str, path: str
     ) -> str:
         """Build a comprehensive tool description from operation metadata."""
-        summary = operation.get("summary", "")
-        description = operation.get("description", "")
+        summary = operation.summary or ""
+        description = operation.description or ""
 
         # Combine summary and description
         if summary and description:
@@ -66,26 +81,25 @@ class ParameterParser:
         # Add response documentation
         full_desc = ParameterParser._add_response_docs(full_desc, operation)
 
-        # Add example if available
-        full_desc = ParameterParser._add_example_docs(full_desc, operation)
-
         return full_desc
 
     @staticmethod
-    def _add_parameter_docs(description: str, operation: dict[str, Any]) -> str:
+    def _add_parameter_docs(description: str, operation: SwaggerOperation) -> str:
         """Add parameter documentation to description."""
-        params = operation.get("parameters", [])
+        params = operation.parameters
         if not params:
             return description
 
         param_docs = []
         for param in params:
-            param_desc = param.get("description", "")
-            param_type = param.get("type", "string")
-            param_in = param.get("in", "query")
-            required = " (required)" if param.get("required") else " (optional)"
+            param_desc = param.description or ""
+            param_type = param.type_ or "string"
+            param_in = param.in_
+            required = " (required)" if param.required else " (optional)"
 
-            param_doc = f"- {param['name']}: {param_desc} [{param_type} in {param_in}]{required}"
+            param_doc = (
+                f"- {param.name}: {param_desc} [{param_type} in {param_in}]{required}"
+            )
             param_docs.append(param_doc)
 
         if param_docs:
@@ -94,27 +108,17 @@ class ParameterParser:
         return description
 
     @staticmethod
-    def _add_response_docs(description: str, operation: dict[str, Any]) -> str:
+    def _add_response_docs(description: str, operation: SwaggerOperation) -> str:
         """Add response documentation to description."""
         http_ok = "200"
         http_created = "201"
 
-        responses = operation.get("responses", {})
+        responses = operation.responses
         success_response = responses.get(http_ok) or responses.get(http_created)
 
         if success_response:
-            response_desc = success_response.get("description", "")
+            response_desc = success_response.description
             if response_desc:
                 description += f"\n\nReturns: {response_desc}"
-
-        return description
-
-    @staticmethod
-    def _add_example_docs(description: str, operation: dict[str, Any]) -> str:
-        """Add example documentation to description."""
-        if "x-example" in operation:
-            description += (
-                f"\n\nExample: {json.dumps(operation['x-example'], indent=2)}"
-            )
 
         return description
