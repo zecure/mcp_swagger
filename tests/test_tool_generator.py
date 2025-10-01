@@ -15,6 +15,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from mcp_swagger.generators.tool_generator import ToolGenerator
 from mcp_swagger.models import ParameterInfo, ToolInfo
+from mcp_swagger.models.swagger import SwaggerOperation, SwaggerSpec
 
 
 class TestToolGenerator:
@@ -22,57 +23,59 @@ class TestToolGenerator:
 
     def setup_method(self) -> None:
         """Set up test fixtures for each test method."""
-        self.sample_spec = {
-            "swagger": "2.0",
-            "host": "api.example.com",
-            "basePath": "/v1",
-            "schemes": ["https"],
-            "paths": {
-                "/users": {
-                    "get": {
-                        "operationId": "listUsers",
-                        "summary": "List all users",
-                        "parameters": [
-                            {
-                                "name": "limit",
-                                "in": "query",
-                                "type": "integer",
-                                "required": False,
-                            }
-                        ],
+        self.sample_spec = SwaggerSpec.from_dict(
+            {
+                "swagger": "2.0",
+                "host": "api.example.com",
+                "basePath": "/v1",
+                "schemes": ["https"],
+                "paths": {
+                    "/users": {
+                        "get": {
+                            "operationId": "listUsers",
+                            "summary": "List all users",
+                            "parameters": [
+                                {
+                                    "name": "limit",
+                                    "in": "query",
+                                    "type": "integer",
+                                    "required": False,
+                                }
+                            ],
+                        },
+                        "post": {
+                            "operationId": "createUser",
+                            "summary": "Create a new user",
+                            "parameters": [
+                                {
+                                    "name": "body",
+                                    "in": "body",
+                                    "required": True,
+                                    "schema": {
+                                        "type": "object",
+                                        "properties": {"name": {"type": "string"}},
+                                    },
+                                }
+                            ],
+                        },
                     },
-                    "post": {
-                        "operationId": "createUser",
-                        "summary": "Create a new user",
-                        "parameters": [
-                            {
-                                "name": "body",
-                                "in": "body",
-                                "required": True,
-                                "schema": {
-                                    "type": "object",
-                                    "properties": {"name": {"type": "string"}},
-                                },
-                            }
-                        ],
+                    "/users/{userId}": {
+                        "get": {
+                            "operationId": "getUser",
+                            "summary": "Get user by ID",
+                            "parameters": [
+                                {
+                                    "name": "userId",
+                                    "in": "path",
+                                    "type": "string",
+                                    "required": True,
+                                }
+                            ],
+                        },
                     },
                 },
-                "/users/{userId}": {
-                    "get": {
-                        "operationId": "getUser",
-                        "summary": "Get user by ID",
-                        "parameters": [
-                            {
-                                "name": "userId",
-                                "in": "path",
-                                "type": "string",
-                                "required": True,
-                            }
-                        ],
-                    },
-                },
-            },
-        }
+            }
+        )
 
         # Mock dependencies
         self.mock_security_handler = Mock()
@@ -119,7 +122,7 @@ class TestToolGenerator:
         assert generator.base_path == "/v1"
 
         # Test without basePath
-        spec_no_base = {"swagger": "2.0", "paths": {}}
+        spec_no_base = SwaggerSpec.from_dict({"swagger": "2.0", "paths": {}})
         generator = ToolGenerator(
             swagger_spec=spec_no_base,
             base_url="https://api.example.com",
@@ -177,15 +180,17 @@ class TestToolGenerator:
     def test_skip_invalid_http_methods(self) -> None:
         """Test that invalid HTTP methods are skipped."""
         # Arrange
-        spec_with_invalid = {
-            "paths": {
-                "/test": {
-                    "get": {"operationId": "valid"},
-                    "parameters": {},  # Not a valid HTTP method
-                    "x-custom": {},  # Custom extension
+        spec_with_invalid = SwaggerSpec.from_dict(
+            {
+                "paths": {
+                    "/test": {
+                        "get": {"operationId": "valid"},
+                        "parameters": {},  # Not a valid HTTP method
+                        "x-custom": {},  # Custom extension
+                    }
                 }
             }
-        }
+        )
 
         generator = ToolGenerator(
             swagger_spec=spec_with_invalid,
@@ -212,7 +217,7 @@ class TestToolGenerator:
             mcp_server=self.mock_mcp,
         )
 
-        operation = self.sample_spec["paths"]["/users"]["get"]
+        operation = self.sample_spec.paths["/users"].get
 
         # Act
         tool_info = generator._create_tool_info("/users", "get", operation)
@@ -237,7 +242,9 @@ class TestToolGenerator:
             mcp_server=self.mock_mcp,
         )
 
-        operation = {"summary": "Test operation"}  # No operationId
+        operation = SwaggerOperation.from_dict(
+            {"summary": "Test operation"}
+        )  # No operationId
 
         # Act
         tool_info = generator._create_tool_info("/users/profile", "put", operation)
@@ -558,7 +565,10 @@ class TestToolGenerator:
 
             # Test execution
             result = await func()
-            assert result == {"result": "success"}
+            expected_result = {"status": "success", "data": {"result": "success"}}
+            assert result["status"] == expected_result["status"]
+            assert result["data"] == expected_result["data"]
+            assert "error" in result  # error method should be present but not called
             self.mock_http_client.execute_request.assert_called_once()
 
     def test_get_generated_tools(self) -> None:

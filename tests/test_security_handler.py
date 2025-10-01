@@ -14,6 +14,7 @@ import pytest
 # Add parent directory to path to import from api_client
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from mcp_swagger.api_client.security import SecurityHandler
+from mcp_swagger.models.swagger import SwaggerOperation, SwaggerSpec
 
 
 class TestSecurityHandler:
@@ -51,19 +52,23 @@ class TestSecurityHandler:
 
     def test_initialization(self) -> None:
         """Test SecurityHandler initialization."""
+        # Arrange
+        spec = SwaggerSpec.from_dict(self.sample_spec_with_bearer)
+
         # Act
-        handler = SecurityHandler("test_token", self.sample_spec_with_bearer)
+        handler = SecurityHandler("test_token", spec)
 
         # Assert
         assert handler.api_token == "test_token"
-        assert handler.spec == self.sample_spec_with_bearer
-        assert "Bearer" in handler.security_definitions
+        assert handler.spec == spec
+        assert "Bearer" in handler.spec.security_definitions
 
     def test_get_headers_no_token(self) -> None:
         """Test that no headers are returned when no token is provided."""
         # Arrange
-        handler = SecurityHandler(None, self.sample_spec_with_bearer)
-        operation = {}
+        spec = SwaggerSpec.from_dict(self.sample_spec_with_bearer)
+        handler = SecurityHandler(None, spec)
+        operation = SwaggerOperation.from_dict({})
 
         # Act
         headers = handler.get_headers(operation)
@@ -74,8 +79,11 @@ class TestSecurityHandler:
     def test_get_headers_bearer_global_security(self) -> None:
         """Test Bearer token headers with global security definition."""
         # Arrange
-        handler = SecurityHandler("my_token_123", self.sample_spec_with_bearer)
-        operation = {}  # No operation-level security, uses global
+        spec = SwaggerSpec.from_dict(self.sample_spec_with_bearer)
+        handler = SecurityHandler("my_token_123", spec)
+        operation = SwaggerOperation.from_dict(
+            {}
+        )  # No operation-level security, uses global
 
         # Act
         headers = handler.get_headers(operation)
@@ -86,8 +94,9 @@ class TestSecurityHandler:
     def test_get_headers_bearer_operation_security(self) -> None:
         """Test Bearer token headers with operation-level security."""
         # Arrange
-        handler = SecurityHandler("op_token", self.sample_spec_with_bearer)
-        operation = {"security": [{"Bearer": []}]}
+        spec = SwaggerSpec.from_dict(self.sample_spec_with_bearer)
+        handler = SecurityHandler("op_token", spec)
+        operation = SwaggerOperation.from_dict({"security": [{"Bearer": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -98,8 +107,9 @@ class TestSecurityHandler:
     def test_get_headers_api_key_custom_header(self) -> None:
         """Test API key with custom header name."""
         # Arrange
-        handler = SecurityHandler("api_key_value", self.sample_spec_with_api_key)
-        operation = {"security": [{"ApiKey": []}]}
+        spec = SwaggerSpec.from_dict(self.sample_spec_with_api_key)
+        handler = SecurityHandler("api_key_value", spec)
+        operation = SwaggerOperation.from_dict({"security": [{"ApiKey": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -110,7 +120,7 @@ class TestSecurityHandler:
     def test_get_headers_api_key_authorization_header(self) -> None:
         """Test API key that uses Authorization header."""
         # Arrange
-        spec = {
+        spec_dict = {
             "securityDefinitions": {
                 "AuthKey": {
                     "type": "apiKey",
@@ -119,8 +129,9 @@ class TestSecurityHandler:
                 }
             }
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("auth_key_123", spec)
-        operation = {"security": [{"AuthKey": []}]}
+        operation = SwaggerOperation.from_dict({"security": [{"AuthKey": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -131,8 +142,9 @@ class TestSecurityHandler:
     def test_get_headers_no_security_required(self) -> None:
         """Test operation with no security requirements."""
         # Arrange
-        handler = SecurityHandler("token", self.sample_spec_no_security)
-        operation = {}
+        spec = SwaggerSpec.from_dict(self.sample_spec_no_security)
+        handler = SecurityHandler("token", spec)
+        operation = SwaggerOperation.from_dict({})
 
         # Act
         headers = handler.get_headers(operation)
@@ -143,7 +155,7 @@ class TestSecurityHandler:
     def test_get_headers_multiple_security_requirements(self) -> None:
         """Test handling multiple security requirements."""
         # Arrange
-        spec = {
+        spec_dict = {
             "securityDefinitions": {
                 "Bearer": {
                     "type": "apiKey",
@@ -157,9 +169,12 @@ class TestSecurityHandler:
                 },
             }
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("multi_token", spec)
         # Multiple security requirements (usually OR logic, but we process all)
-        operation = {"security": [{"Bearer": []}, {"ApiKey": []}]}
+        operation = SwaggerOperation.from_dict(
+            {"security": [{"Bearer": []}, {"ApiKey": []}]}
+        )
 
         # Act
         headers = handler.get_headers(operation)
@@ -171,7 +186,7 @@ class TestSecurityHandler:
     def test_get_headers_unsupported_security_type(self) -> None:
         """Test handling of unsupported security types."""
         # Arrange
-        spec = {
+        spec_dict = {
             "securityDefinitions": {
                 "OAuth2": {
                     "type": "oauth2",
@@ -180,8 +195,11 @@ class TestSecurityHandler:
                 }
             }
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("token", spec)
-        operation = {"security": [{"OAuth2": ["read", "write"]}]}
+        operation = SwaggerOperation.from_dict(
+            {"security": [{"OAuth2": ["read", "write"]}]}
+        )
 
         # Act
         headers = handler.get_headers(operation)
@@ -192,7 +210,7 @@ class TestSecurityHandler:
     def test_get_headers_query_param_security(self) -> None:
         """Test that query parameter security is not added to headers."""
         # Arrange
-        spec = {
+        spec_dict = {
             "securityDefinitions": {
                 "QueryKey": {
                     "type": "apiKey",
@@ -201,8 +219,9 @@ class TestSecurityHandler:
                 }
             }
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("query_token", spec)
-        operation = {"security": [{"QueryKey": []}]}
+        operation = SwaggerOperation.from_dict({"security": [{"QueryKey": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -213,7 +232,7 @@ class TestSecurityHandler:
     def test_operation_security_overrides_global(self) -> None:
         """Test that operation-level security overrides global security."""
         # Arrange
-        spec = {
+        spec_dict = {
             "security": [{"GlobalKey": []}],
             "securityDefinitions": {
                 "GlobalKey": {
@@ -228,8 +247,9 @@ class TestSecurityHandler:
                 },
             },
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("test_token", spec)
-        operation = {"security": [{"OperationKey": []}]}
+        operation = SwaggerOperation.from_dict({"security": [{"OperationKey": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -241,8 +261,11 @@ class TestSecurityHandler:
     def test_empty_security_array(self) -> None:
         """Test handling of empty security array (public endpoint)."""
         # Arrange
-        handler = SecurityHandler("token", self.sample_spec_with_bearer)
-        operation = {"security": []}  # Empty array means no security
+        spec = SwaggerSpec.from_dict(self.sample_spec_with_bearer)
+        handler = SecurityHandler("token", spec)
+        operation = SwaggerOperation.from_dict(
+            {"security": []}
+        )  # Empty array means no security
 
         # Act
         headers = handler.get_headers(operation)
@@ -253,9 +276,10 @@ class TestSecurityHandler:
     def test_undefined_security_scheme(self) -> None:
         """Test handling of undefined security schemes."""
         # Arrange
-        spec = {"securityDefinitions": {}}
+        spec_dict = {"securityDefinitions": {}}
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("token", spec)
-        operation = {"security": [{"UndefinedScheme": []}]}
+        operation = SwaggerOperation.from_dict({"security": [{"UndefinedScheme": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -266,7 +290,7 @@ class TestSecurityHandler:
     def test_mixed_security_types_in_requirement(self) -> None:
         """Test a single security requirement with multiple schemes."""
         # Arrange
-        spec = {
+        spec_dict = {
             "securityDefinitions": {
                 "Key1": {
                     "type": "apiKey",
@@ -280,9 +304,10 @@ class TestSecurityHandler:
                 },
             }
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("shared_token", spec)
         # Single requirement with multiple schemes (AND logic)
-        operation = {"security": [{"Key1": [], "Key2": []}]}
+        operation = SwaggerOperation.from_dict({"security": [{"Key1": [], "Key2": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -294,9 +319,10 @@ class TestSecurityHandler:
     def test_security_definitions_missing(self) -> None:
         """Test handling when securityDefinitions is missing."""
         # Arrange
-        spec = {"swagger": "2.0"}  # No securityDefinitions
+        spec_dict = {"swagger": "2.0"}  # No securityDefinitions
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("token", spec)
-        operation = {"security": [{"Bearer": []}]}
+        operation = SwaggerOperation.from_dict({"security": [{"Bearer": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -308,7 +334,8 @@ class TestSecurityHandler:
     def test_process_security_requirement_bearer_shortcut(self) -> None:
         """Test the Bearer shortcut in _process_security_requirement."""
         # Arrange
-        handler = SecurityHandler("bearer_token", {})
+        spec = SwaggerSpec.from_dict({})
+        handler = SecurityHandler("bearer_token", spec)
         sec_req = {"Bearer": []}
 
         # Act
@@ -320,7 +347,7 @@ class TestSecurityHandler:
     def test_api_key_with_missing_name(self) -> None:
         """Test API key definition with missing name field."""
         # Arrange
-        spec = {
+        spec_dict = {
             "securityDefinitions": {
                 "BadKey": {
                     "type": "apiKey",
@@ -329,8 +356,9 @@ class TestSecurityHandler:
                 }
             }
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("token", spec)
-        operation = {"security": [{"BadKey": []}]}
+        operation = SwaggerOperation.from_dict({"security": [{"BadKey": []}]})
 
         # Act
         headers = handler.get_headers(operation)
@@ -342,7 +370,7 @@ class TestSecurityHandler:
     def test_case_sensitivity(self) -> None:
         """Test that security scheme names are case-sensitive."""
         # Arrange
-        spec = {
+        spec_dict = {
             "securityDefinitions": {
                 "bearer": {  # lowercase
                     "type": "apiKey",
@@ -351,8 +379,11 @@ class TestSecurityHandler:
                 }
             }
         }
+        spec = SwaggerSpec.from_dict(spec_dict)
         handler = SecurityHandler("token", spec)
-        operation = {"security": [{"Bearer": []}]}  # uppercase
+        operation = SwaggerOperation.from_dict(
+            {"security": [{"Bearer": []}]}
+        )  # uppercase
 
         # Act
         headers = handler.get_headers(operation)

@@ -5,12 +5,14 @@ from typing import Any
 
 import httpx
 
+from mcp_swagger.models import SwaggerSpec
+
 
 class SpecLoader:
     """Loader for Swagger/OpenAPI specifications."""
 
     @staticmethod
-    def load(path_or_url: str, timeout: float = 600.0) -> dict[str, Any]:
+    def load(path_or_url: str, timeout: float = 600.0) -> SwaggerSpec:
         """Load a Swagger specification from a file or URL.
 
         Args:
@@ -25,9 +27,11 @@ class SpecLoader:
 
         """
         if path_or_url.startswith(("http://", "https://")):
-            return SpecLoader._load_from_url(path_or_url, timeout)
+            raw_spec = SpecLoader._load_from_url(path_or_url, timeout)
         else:
-            return SpecLoader._load_from_file(path_or_url)
+            raw_spec = SpecLoader._load_from_file(path_or_url)
+
+        return SwaggerSpec.from_dict(raw_spec)
 
     @staticmethod
     def _load_from_url(url: str, timeout: float) -> dict[str, Any]:

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Unit tests for response filtering functionality."""
 
-
 from mcp_swagger.utils.response_filter import filter_response_attributes
 
 
